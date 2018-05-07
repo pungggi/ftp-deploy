@@ -29,7 +29,7 @@ var FtpDeploy = require('ftp-deploy');
 var ftpDeploy = new FtpDeploy();
 
 var config = {
-	user: "user",
+	user: "user",  // NOTE that this was username in 1.x 
 	password: "password", // optional, prompted if none given
 	host: "ftp.someserver.com",
 	port: 21,
@@ -38,7 +38,13 @@ var config = {
 	include: ['*.php', 'dist/*'],
 	exclude: ['dist/**/*.map']   // e.g. exclude sourcemaps
 }
+
+// use with promises
+ftpDeploy.deploy(config)
+	.then(res => console.log('finished'))
+	.catch(err => console.log(err))
 	
+// use with callback
 ftpDeploy.deploy(config, function(err) {
 	if (err) console.log(err)
 	else console.log('finished');
@@ -47,8 +53,10 @@ ftpDeploy.deploy(config, function(err) {
 
 ## Configuration
 
+You need to list all file patterns that you want to include for uploading, and the exclude option enables exceptions to the rule
+
  * `include`: all files that match will be uploaded. Note that a `[ ]` matches nothing
- * `exclude`: if a file matches the include pattern it may nonetheless be excluded
+ * `exclude`: if a file matches the include pattern a subset may nonetheless be excluded
 
 ## Events
 
