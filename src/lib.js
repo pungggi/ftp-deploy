@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const util = require("util");
 const read = require("read");
+
+const Promise = require('bluebird');
 const readP = util.promisify(read);
 const minimatch = require("minimatch");
 
@@ -10,7 +12,7 @@ const minimatch = require("minimatch");
 function checkIncludes(config) {
     config.excludes = config.excludes || [];
     if (!config.include || !config.include.length) {
-        return Promise.reject({code: "NoIncludes", message: "You need to specify files to upload - e.g. ['*', '**/*']"});
+        return Promise.reject({ code: "NoIncludes", message: "You need to specify files to upload - e.g. ['*', '**/*']" });
     } else {
         return Promise.resolve(config)
     }
@@ -64,7 +66,6 @@ function parseLocal(includes, excludes, localRootDir, relDir) {
         if (fs.lstatSync(currItem).isDirectory()) {
             // currItem is a directory. Recurse and attach to accumulator
             let tmp = parseLocal(includes, excludes, localRootDir, newRelDir);
-            // console.log("recurse into", newRelDir, tmp);
             for (let key in tmp) {
                 if (tmp[key].length == 0) {
                     delete tmp[key];
@@ -78,9 +79,6 @@ function parseLocal(includes, excludes, localRootDir, relDir) {
                 // console.log("including", currItem);
                 acc[relDir].push(item);
                 return acc;
-            }
-            {
-                // console.log("excluding", currItem);
             }
         }
         return acc;
@@ -106,10 +104,36 @@ function countFiles(filemap) {
         .reduce((acc, item) => acc.concat(item))
         .length
 }
+
+function deleteDir(ftp, dir) {
+    return ftp.list(dir)
+        .then(lst => {
+            // FIXME move this to an event
+            console.log("Deleting directory:", dir);
+            let dirNames =
+                lst
+                    .filter(f => f.type == 'd')
+                    .map(f => path.join(dir, f.name));
+
+            let fnames =
+                lst
+                    .filter(f => f.type != 'd')
+                    .map(f => path.join(dir, f.name));
+
+            // delete sub-directories and then all files
+            return Promise.mapSeries(dirNames, dirName => {
+                // deletes everything in sub-directory, and then itself
+                return deleteDir(ftp, dirName).then(() => ftp.delete(dirName));
+            })
+                .then(() => Promise.mapSeries(fnames, fname => ftp.delete(fname)));
+        });
+}
+
 module.exports = {
     checkIncludes: checkIncludes,
     getPassword: getPassword,
     parseLocal: parseLocal,
     canIncludePath: canIncludePath,
-    countFiles: countFiles
+    countFiles: countFiles,
+    deleteDir: deleteDir
 };
