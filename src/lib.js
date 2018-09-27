@@ -111,6 +111,10 @@ function countFiles(filemap) {
 function deleteDir(ftp, dir) {
     return ftp.list(dir).then(lst => {
         // FIXME move this to an event
+        if (dir.includes("videos")) {
+            console.log("Skipping:", dir);
+            return;
+        }
         console.log("Deleting directory:", dir);
         let dirNames = lst
             .filter(f => f.type == "d" && f.name != ".." && f.name != ".")
