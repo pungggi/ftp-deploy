@@ -115,7 +115,7 @@ function deleteDir(ftp, dir) {
             console.log("Skipping:", dir);
             return;
         }
-        console.log("Deleting directory:", dir);
+        console.log("Prepare deleting directory:", dir);
         let dirNames = lst
             .filter(f => f.type == "d" && f.name != ".." && f.name != ".")
             .map(f => path.join(dir, f.name));
@@ -127,7 +127,13 @@ function deleteDir(ftp, dir) {
         // delete sub-directories and then all files
         return Promise.mapSeries(dirNames, dirName => {
             // deletes everything in sub-directory, and then itself
-            return deleteDir(ftp, dirName).then(() => ftp.delete(dirName));
+            return deleteDir(ftp, dirName).then(() => {
+                console.log("Deleting", dirName);
+                if (dirName.endsWith(dir)) {
+                    console.log("REMOTE ROOT");
+                }
+                ftp.delete(dirName);
+            });
         }).then(() => Promise.mapSeries(fnames, fname => ftp.delete(fname)));
     });
 }
