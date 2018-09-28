@@ -131,6 +131,11 @@ function deleteDir(ftp, dir) {
                 console.log("Deleting", dirName);
                 if (dirName.endsWith(dir)) {
                     console.log("REMOTE ROOT");
+                    return;
+                }
+                if (dirName.endsWith("videso")) {
+                    console.log("Skipped Videos");
+                    return;
                 }
                 ftp.delete(dirName);
             });
