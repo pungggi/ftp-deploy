@@ -115,6 +115,10 @@ function deleteDir(ftp, dir) {
             console.log("Skipping:", dir);
             return;
         }
+        if (dir.includes("cgi-bin")) {
+            console.log("Skipping:", dir);
+            return;
+        }
         console.log("Prepare deleting directory:", dir);
         let dirNames = lst
             .filter(f => f.type == "d" && f.name != ".." && f.name != ".")
@@ -133,8 +137,12 @@ function deleteDir(ftp, dir) {
                     console.log("REMOTE ROOT");
                     return;
                 }
-                if (dirName.endsWith("videso")) {
+                if (dirName.endsWith("videos")) {
                     console.log("Skipped Videos");
+                    return;
+                }
+                if (dirName.endsWith("cgi-bin")) {
+                    console.log("Skipped cgi-bin");
                     return;
                 }
                 ftp.delete(dirName);
