@@ -25,7 +25,7 @@ const FtpDeployer = function() {
     this.ftp = null;
     this.eventObject = {
         totalFilesCount: 0,
-        transferredFileCount: 1,
+        transferredFileCount: 0,
         filename: ""
     };
 
@@ -40,9 +40,11 @@ const FtpDeployer = function() {
     // Creates a remote directory and uploads all of the files in it
     // Resolves a confirmation message on success
     this.makeAndUpload = (config, relDir, fnames) => {
+        let newDirectory = upath.join(config.remoteRoot, relDir);
         return this.ftp
-            .mkdir(upath.join(config.remoteRoot, relDir), true)
+            .mkdir(newDirectory, true)
             .then(() => {
+                // console.log("newDirectory", newDirectory);
                 return Promise.mapSeries(fnames, fname => {
                     let tmpFileName = upath.join(
                         config.localRoot,
@@ -76,8 +78,8 @@ const FtpDeployer = function() {
         this.ftp = new PromiseFtp();
 
         return this.ftp.connect(config).then(serverMessage => {
-            console.log("Connected to:", config.host);
-            console.log("Connected: Server message: " + serverMessage);
+            this.emit("log", "Connected to: " + config.host);
+            this.emit("log", "Connected: Server message: " + serverMessage);
 
             return config;
         });
@@ -91,6 +93,7 @@ const FtpDeployer = function() {
             config.localRoot,
             "/"
         );
+        // console.log(filemap);
 
         this.eventObject["totalFilesCount"] = lib.countFiles(filemap);
 
@@ -101,6 +104,7 @@ const FtpDeployer = function() {
     // Returns config
     this.deleteRemote = config => {
         if (config.deleteRemote) {
+            this.emit("log", "Deleting directory: " + config.remoteRoot);
             return lib
                 .deleteDir(this.ftp, config.remoteRoot)
                 .then(() => config);
@@ -114,13 +118,13 @@ const FtpDeployer = function() {
             .then(lib.getPassword)
             .then(this.connect)
             .then(this.deleteRemote)
-            .then(config => this.checkLocalAndUpload(config))
-            .then(() => {
+            .then(this.checkLocalAndUpload)
+            .then(res => {
                 this.ftp.end();
                 if (typeof cb == "function") {
-                    cb(null);
+                    cb(null, res);
                 } else {
-                    return Promise.resolve(null);
+                    return Promise.resolve(res);
                 }
             })
             .catch(err => {
@@ -130,7 +134,7 @@ const FtpDeployer = function() {
                 )
                     this.ftp.end();
                 if (typeof cb == "function") {
-                    cb(err);
+                    cb(err, null);
                 } else {
                     return Promise.reject(err);
                 }

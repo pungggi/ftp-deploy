@@ -39,19 +39,19 @@ var config = {
 	// include: ['*', '**/*'],      // this would upload everything except dot files
 	include: ['*.php', 'dist/*'],
     exclude: ['dist/**/*.map'],     // e.g. exclude sourcemaps - ** exclude: [] if nothing to exclude **
-    deleteRemote: true,              // delete existing files at destination before uploading
+    deleteRemote: false,              // delete ALL existing files at destination before uploading, if true
     forcePasv: true                 // Passive mode is forced (EPSV command is not sent)
 }
 
 // use with promises
 ftpDeploy.deploy(config)
-	.then(res => console.log('finished'))
+	.then(res => console.log('finished:', res))
 	.catch(err => console.log(err))
 	
 // use with callback
-ftpDeploy.deploy(config, function(err) {
+ftpDeploy.deploy(config, function(err, res) {
 	if (err) console.log(err)
-	else console.log('finished');
+	else console.log('finished:', res);
 });
 ```
 
@@ -73,6 +73,9 @@ ftpDeploy.on('uploading', function(data) {
     data.filename;             // partial path with filename being uploaded
 });
 ftpDeploy.on('uploaded', function(data) {
+	console.log(data);         // same data as uploading event
+});
+ftpDeploy.on('log', function(data) {
 	console.log(data);         // same data as uploading event
 });
 ```
@@ -102,3 +105,4 @@ npm test
 ## ToDo
  
 re-enable continueOnError
+Move uploading and uploaded events to log

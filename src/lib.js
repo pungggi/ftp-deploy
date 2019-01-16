@@ -112,8 +112,6 @@ function countFiles(filemap) {
 
 function deleteDir(ftp, dir) {
     return ftp.list(dir).then(lst => {
-        // FIXME move this to an event
-        console.log("Deleting directory:", dir);
         let dirNames = lst
             .filter(f => f.type == "d" && f.name != ".." && f.name != ".")
             .map(f => path.posix.join(dir, f.name));
@@ -130,11 +128,26 @@ function deleteDir(ftp, dir) {
     });
 }
 
+mkDirExists = (ftp, dir) => {
+    // Make the directory using recursive expand
+   return ftp.mkdir(dir, true)
+        .catch(err => {
+            if (err.message.startsWith("EEXIST")) {
+                return Promise.resolve()
+            } else {
+                console.log(Object.getOwnPropertyNames(err));
+                console.log(err.message);
+                return Promise.reject(err);
+            }
+        });
+}
+
 module.exports = {
     checkIncludes: checkIncludes,
     getPassword: getPassword,
     parseLocal: parseLocal,
     canIncludePath: canIncludePath,
     countFiles: countFiles,
+    mkDirExists: mkDirExists,
     deleteDir: deleteDir
 };
